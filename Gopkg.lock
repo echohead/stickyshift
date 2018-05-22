@@ -23,6 +23,18 @@
   version = "v1.2.1"
 
 [[projects]]
+  name = "go.uber.org/atomic"
+  packages = ["."]
+  revision = "1ea20fb1cbb1cc08cbd0d913a96dead89aa18289"
+  version = "v1.3.2"
+
+[[projects]]
+  name = "go.uber.org/multierr"
+  packages = ["."]
+  revision = "3c4937480c32f4c13a875a1829af76c98ca3d40a"
+  version = "v1.1.0"
+
+[[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
@@ -31,6 +43,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0f6b320e64ddc648dc706cc1e0660d7a2feaf5b6f0e90e645198f37a5c2a36c6"
+  inputs-digest = "6921957e404d1b1143729d6eee068518a22b258e8ca801e29a69406303d07e77"
   solver-name = "gps-cdcl"
   solver-version = 1
