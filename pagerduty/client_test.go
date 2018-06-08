@@ -359,14 +359,14 @@ func TestGetOverrides(t *testing.T) {
 		msg     string
 		status  int
 		body    string
-		want    []Override
+		want    []override
 		wantErr bool
 	}{
 		{
 			"ok",
 			http.StatusOK,
 			`{"overrides": [{"start": "2018-05-18T12:13:14-07:00", "end": "2018-05-19T01:02:03-07:00", "user": {"id": "xyz", "type": "user_reference"}}]}`,
-			[]Override{
+			[]override{
 				{
 					User: userRef{
 						Id:   "xyz",
@@ -382,13 +382,13 @@ func TestGetOverrides(t *testing.T) {
 			"fail",
 			http.StatusInternalServerError,
 			"_",
-			[]Override{},
+			[]override{},
 			true,
 		},
 	} {
 		t.Run(test.msg, func(t *testing.T) {
 			c := &clientImpl{newMockDoer(test.status, test.body), "_", _headers, map[string]string{}}
-			res, err := c.GetOverrides("_", time.Now(), time.Now())
+			res, err := c.getOverrides("_", time.Now(), time.Now())
 			if test.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -464,7 +464,7 @@ func TestCreateOverride(t *testing.T) {
 	} {
 		t.Run(test.msg, func(t *testing.T) {
 			c := &clientImpl{test.d, "_", _headers, map[string]string{}}
-			err := c.CreateOverride("_", stickyshift.Shift{Email: "foo@bar.com"})
+			err := c.createOverride("_", stickyshift.Shift{Email: "foo@bar.com"})
 			if test.wantErr != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), test.wantErr)

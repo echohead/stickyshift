@@ -25,6 +25,38 @@ type (
 	doer interface {
 		Do(*http.Request) (*http.Response, error)
 	}
+
+	// override represents a pagerduty override
+	override struct {
+		User  userRef   `json:"user"`
+		Start time.Time `json:"start"`
+		End   time.Time `json:"end"`
+	}
+
+	// user holds only the needed fields of a pagerduty user
+	user struct {
+		Id    string `json:"id"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+
+	getScheduleResponse struct {
+		Schedule Schedule `json:"schedule"`
+	}
+
+	getOverridesResponse struct {
+		Overrides []override `json:"overrides"`
+	}
+
+	getUsersResponse struct {
+		Users []user `json:"users"`
+	}
+
+	userRef struct {
+		Id   string `json:"id"`
+		Type string `json:"type"`
+		Name string `json:"summary"`
+	}
 )
 
 const (
@@ -59,7 +91,7 @@ func (c *clientImpl) Sync(sid string, shifts stickyshift.ShiftList) error {
 		return err
 	}
 
-	os, err := c.GetOverrides(sid, shifts[0].Start, shifts[len(shifts)-1].End)
+	os, err := c.getOverrides(sid, shifts[0].Start, shifts[len(shifts)-1].End)
 	if err != nil {
 		return err
 	}
@@ -76,7 +108,7 @@ func (c *clientImpl) Sync(sid string, shifts stickyshift.ShiftList) error {
 			continue
 		}
 
-		err = c.CreateOverride(sid, shift)
+		err = c.createOverride(sid, shift)
 		if err != nil {
 			return err
 		}
@@ -93,21 +125,21 @@ func (c *clientImpl) GetSchedule(id string) (Schedule, error) {
 	return resp.Schedule, nil
 }
 
-func (c *clientImpl) getUser(email string) (User, error) {
+func (c *clientImpl) getUser(email string) (user, error) {
 	resp := &getUsersResponse{}
 	if err := c.get(fmt.Sprintf("/users?query=%s", url.QueryEscape(email)), resp); err != nil {
-		return User{}, err
+		return user{}, err
 	}
 	if len(resp.Users) != 1 {
-		return User{}, fmt.Errorf("expected one user for %q, found %v", email, len(resp.Users))
+		return user{}, fmt.Errorf("expected one user for %q, found %v", email, len(resp.Users))
 	}
 	if resp.Users[0].Email != email {
-		return User{}, fmt.Errorf("got user with email %q, expected %q", resp.Users[0].Email, email)
+		return user{}, fmt.Errorf("got user with email %q, expected %q", resp.Users[0].Email, email)
 	}
 	return resp.Users[0], nil
 }
 
-func (c *clientImpl) GetOverrides(sid string, start, end time.Time) ([]Override, error) {
+func (c *clientImpl) getOverrides(sid string, start, end time.Time) ([]override, error) {
 	resp := &getOverridesResponse{}
 	t0 := start.Format(_getOverridesTimeFmt)
 	t1 := end.Format(_getOverridesTimeFmt)
@@ -118,12 +150,12 @@ func (c *clientImpl) GetOverrides(sid string, start, end time.Time) ([]Override,
 	return resp.Overrides, nil
 }
 
-func (c *clientImpl) CreateOverride(sid string, shift stickyshift.Shift) error {
+func (c *clientImpl) createOverride(sid string, shift stickyshift.Shift) error {
 	uid, err := c.userId(shift.Email)
 	if err != nil {
 		return err
 	}
-	o := Override{
+	o := override{
 		User: userRef{
 			Id:   uid,
 			Type: "user_reference",
@@ -134,7 +166,7 @@ func (c *clientImpl) CreateOverride(sid string, shift stickyshift.Shift) error {
 	return c.post(fmt.Sprintf("/schedules/%s/overrides", sid), o)
 }
 
-func (c *clientImpl) overrideExists(os []Override, shift stickyshift.Shift) (bool, error) {
+func (c *clientImpl) overrideExists(os []override, shift stickyshift.Shift) (bool, error) {
 	uid, err := c.userId(shift.Email)
 	if err != nil {
 		return false, err
