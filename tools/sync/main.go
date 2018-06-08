@@ -6,6 +6,7 @@ package main
 // - apply it to pagerduty
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -35,4 +36,6 @@ func main() {
 
 	err = c.Sync(s.Id, s.Shifts)
 	fatalIfErr(err)
+
+	fmt.Printf("successfully synced %s to pagerduty\n", f)
 }
