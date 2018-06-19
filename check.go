@@ -2,6 +2,7 @@ package stickyshift
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 
@@ -14,7 +15,11 @@ func check(s Schedule) error {
 	for _, check := range []func(Schedule) error{
 		checkId,
 		checkShiftListDupes,
+		checkShiftListDupeEmail,
 		checkShiftListSorted,
+		checkExtendMinDays,
+		checkExtendMaxDays,
+		checkExtendMinLessThanMax,
 	} {
 		errs = multierr.Append(errs, check(s))
 
@@ -38,6 +43,15 @@ func checkShiftListDupes(s Schedule) error {
 	return nil
 }
 
+func checkShiftListDupeEmail(s Schedule) error {
+	for i := 0; i < len(s.Shifts)-1; i += 1 {
+		if s.Shifts[i].Email == s.Shifts[i+1].Email {
+			return fmt.Errorf("%v appears for two shifts in a row.  this should instead be expressed as a single, longer shift", s.Shifts[i].Email)
+		}
+	}
+	return nil
+}
+
 func checkShiftListSorted(s Schedule) error {
 	if s.Shifts == nil {
 		s.Shifts = ShiftList{}
@@ -51,4 +65,41 @@ func checkShiftListSorted(s Schedule) error {
 		return errors.New("`shifts` must be ordered by time")
 	}
 	return nil
+}
+
+const (
+	_minMaxDays = 21
+	_maxMaxDays = 56
+)
+
+func checkExtendMaxDays(s Schedule) error {
+	if s.Extend == nil {
+		return nil
+	}
+	if s.Extend.MaxDays < _minMaxDays || s.Extend.MaxDays > _maxMaxDays {
+		return fmt.Errorf("extend.maxDays must be between %v and %v, but found %v", _minMaxDays, _maxMaxDays, s.Extend.MaxDays)
+	}
+	return nil
+}
+
+const (
+	_minMinDays = 14
+	_maxMinDays = 30
+)
+
+func checkExtendMinDays(s Schedule) error {
+	if s.Extend == nil {
+		return nil
+	}
+	if s.Extend.MinDays < _minMinDays || s.Extend.MinDays > _maxMinDays {
+		return fmt.Errorf("extend.minDays must be between %v and %v, but found %v", _minMinDays, _maxMinDays, s.Extend.MinDays)
+	}
+	return nil
+}
+
+func checkExtendMinLessThanMax(s Schedule) error {
+	if s.Extend == nil || s.Extend.MinDays < s.Extend.MaxDays {
+		return nil
+	}
+	return fmt.Errorf("extend.minDays must be less than extend.maxDays, but %v >= %v", s.Extend.MinDays, s.Extend.MaxDays)
 }

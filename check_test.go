@@ -11,6 +11,9 @@ import (
 var (
 	_shiftEmpty = Shift{}
 	_shiftEnd   = Shift{Email: _shiftListEnder}
+
+	t0 = time.Time{}
+	t1 = t0.Add(time.Second)
 )
 
 func TestCheck(t *testing.T) {
@@ -20,34 +23,94 @@ func TestCheck(t *testing.T) {
 }
 
 func TestCheckId(t *testing.T) {
-	assert.Error(t, checkId(Schedule{}))
-	assert.NoError(t, checkId(Schedule{Id: "_"}))
+	expectValid(t, checkId,
+		Schedule{Id: "_"},
+	)
+	expectInvalid(t, checkId,
+		Schedule{},
+	)
 }
 
 func TestShiftListSorted(t *testing.T) {
-	t0 := time.Time{}
 	first := Shift{Start: t0}
-	second := Shift{Start: t0.Add(time.Second)}
+	second := Shift{Start: t1}
 
-	assert.NoError(t, checkShiftListSorted(Schedule{Shifts: ShiftList{}}))
-	assert.NoError(t, checkShiftListSorted(Schedule{Shifts: ShiftList{first, second}}))
-	assert.Error(t, checkShiftListSorted(Schedule{Shifts: ShiftList{second, first}}))
+	expectValid(t, checkShiftListSorted,
+		Schedule{Shifts: ShiftList{}},
+		Schedule{Shifts: ShiftList{first, second}},
+	)
+	expectInvalid(t, checkShiftListSorted,
+		Schedule{Shifts: ShiftList{second, first}},
+	)
 }
 
 func TestShiftListDupes(t *testing.T) {
-	t0 := time.Time{}
 	a := Shift{Start: t0}
-	b := Shift{Start: t0.Add(time.Second)}
+	b := Shift{Start: t1}
 
-	assert.NoError(t, checkShiftListDupes(Schedule{Shifts: ShiftList{}}))
-	assert.NoError(t, checkShiftListDupes(Schedule{Shifts: ShiftList{a}}))
-	assert.NoError(t, checkShiftListDupes(Schedule{Shifts: ShiftList{a, b}}))
-	assert.Error(t, checkShiftListDupes(Schedule{Shifts: ShiftList{a, a}}))
+	expectValid(t, checkShiftListDupes,
+		Schedule{Shifts: ShiftList{}},
+		Schedule{Shifts: ShiftList{a}},
+		Schedule{Shifts: ShiftList{a, b}},
+	)
+	expectInvalid(t, checkShiftListDupes,
+		Schedule{Shifts: ShiftList{a, a}},
+	)
+}
 
+func TestShiftListDupeEmails(t *testing.T) {
+	expectValid(t, checkShiftListDupeEmail,
+		Schedule{Shifts: ShiftList{Shift{Start: t0, Email: "a"}, Shift{Start: t1, Email: "b"}}},
+	)
+	expectInvalid(t, checkShiftListDupeEmail,
+		Schedule{Shifts: ShiftList{Shift{Start: t0, Email: "a"}, Shift{Start: t1, Email: "a"}}},
+	)
+}
+
+func TestCheckExtendMaxDays(t *testing.T) {
+	expectValid(t, checkExtendMaxDays,
+		Schedule{},
+		Schedule{Extend: &Extend{MaxDays: _minMaxDays}},
+	)
+	expectInvalid(t, checkExtendMaxDays,
+		Schedule{Extend: &Extend{MaxDays: _maxMaxDays + 1}},
+	)
+}
+
+func TestCheckExtendMinDays(t *testing.T) {
+	expectValid(t, checkExtendMinDays,
+		Schedule{},
+		Schedule{Extend: &Extend{MinDays: _minMinDays}},
+	)
+	expectInvalid(t, checkExtendMinDays,
+		Schedule{Extend: &Extend{MinDays: _maxMinDays + 1}},
+	)
+}
+
+func TestExtendMinLessThanMax(t *testing.T) {
+	expectValid(t, checkExtendMinLessThanMax,
+		Schedule{},
+		Schedule{Extend: &Extend{MinDays: 1, MaxDays: 2}},
+	)
+	expectInvalid(t, checkExtendMinLessThanMax,
+		Schedule{Extend: &Extend{MinDays: 3, MaxDays: 2}},
+	)
 }
 
 func timeFromStr(t *testing.T, s string) time.Time {
 	res, err := time.Parse(time.RFC3339, s)
 	require.NoError(t, err)
 	return res
+}
+
+func expectValid(t *testing.T, f func(Schedule) error, ss ...Schedule) {
+	for _, s := range ss {
+		assert.NoError(t, f(s), "expected %+v to be valid", s)
+	}
+}
+
+func expectInvalid(t *testing.T, f func(Schedule) error, ss ...Schedule) {
+	for _, s := range ss {
+		assert.Error(t, f(s), "expected %+v to be invalid", s)
+	}
 }

@@ -28,9 +28,9 @@ type (
 
 	// Extend contains options for extending the schedule
 	Extend struct {
-		Min   time.Duration `yaml:"min"`
-		Max   time.Duration `yaml:"max"`
-		Users []string      `yaml:"users"`
+		MinDays int      `yaml:"minDays"`
+		MaxDays int      `yaml:"maxDays"`
+		Users   []string `yaml:"users"`
 	}
 )
 
