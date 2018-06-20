@@ -12,9 +12,9 @@ import (
 type (
 	// Schedule represents an oncall schedule
 	Schedule struct {
-		Id     string    `yaml:"id"`
-		Extend *Extend   `yaml:"extend"`
-		Shifts ShiftList `yaml:"shifts"`
+		Id     string      `yaml:"id"`
+		Extend *ExtendOpts `yaml:"extend,omitempty"`
+		Shifts ShiftList   `yaml:"shifts"`
 	}
 
 	// Shift represents an oncall shift
@@ -26,8 +26,8 @@ type (
 
 	ShiftList []Shift
 
-	// Extend contains options for extending the schedule
-	Extend struct {
+	// ExtendOpts contains options for extending the schedule
+	ExtendOpts struct {
 		MinDays int      `yaml:"minDays"`
 		MaxDays int      `yaml:"maxDays"`
 		Users   []string `yaml:"users"`

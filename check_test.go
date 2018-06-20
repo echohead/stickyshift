@@ -70,30 +70,30 @@ func TestShiftListDupeEmails(t *testing.T) {
 func TestCheckExtendMaxDays(t *testing.T) {
 	expectValid(t, checkExtendMaxDays,
 		Schedule{},
-		Schedule{Extend: &Extend{MaxDays: _minMaxDays}},
+		Schedule{Extend: &ExtendOpts{MaxDays: _minMaxDays}},
 	)
 	expectInvalid(t, checkExtendMaxDays,
-		Schedule{Extend: &Extend{MaxDays: _maxMaxDays + 1}},
+		Schedule{Extend: &ExtendOpts{MaxDays: _maxMaxDays + 1}},
 	)
 }
 
 func TestCheckExtendMinDays(t *testing.T) {
 	expectValid(t, checkExtendMinDays,
 		Schedule{},
-		Schedule{Extend: &Extend{MinDays: _minMinDays}},
+		Schedule{Extend: &ExtendOpts{MinDays: _minMinDays}},
 	)
 	expectInvalid(t, checkExtendMinDays,
-		Schedule{Extend: &Extend{MinDays: _maxMinDays + 1}},
+		Schedule{Extend: &ExtendOpts{MinDays: _maxMinDays + 1}},
 	)
 }
 
 func TestExtendMinLessThanMax(t *testing.T) {
 	expectValid(t, checkExtendMinLessThanMax,
 		Schedule{},
-		Schedule{Extend: &Extend{MinDays: 1, MaxDays: 2}},
+		Schedule{Extend: &ExtendOpts{MinDays: 1, MaxDays: 2}},
 	)
 	expectInvalid(t, checkExtendMinLessThanMax,
-		Schedule{Extend: &Extend{MinDays: 3, MaxDays: 2}},
+		Schedule{Extend: &ExtendOpts{MinDays: 3, MaxDays: 2}},
 	)
 }
 
