@@ -144,6 +144,73 @@ func TestUnmarshalShifts(t *testing.T) {
 	}
 }
 
+func TestWrite(t *testing.T) {
+	err := Write("/💩", Schedule{Shifts: ShiftList{{}}})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "permission denied")
+
+	for _, test := range []struct {
+		msg     string
+		sched   Schedule
+		want    string
+		wantErr string
+	}{
+		{
+			msg:     "empty",
+			sched:   Schedule{},
+			wantErr: "cannot marshal an empty shift list",
+		},
+		{
+			msg: "ok",
+			sched: Schedule{
+				Id: "xxx",
+				Shifts: ShiftList{
+					{
+						Start: mustTime(t, "1970-01-01T00:00:00-07:00"),
+						End:   mustTime(t, "1970-01-02T00:00:00-07:00"),
+						Email: "foo",
+					},
+					{
+						Start: mustTime(t, "1970-01-02T00:00:00-07:00"),
+						End:   mustTime(t, "1970-01-03T00:00:00-07:00"),
+						Email: "bar",
+					},
+				},
+			},
+			want: `id: xxx
+shifts:
+  1970-01-01T00:00:00-07:00: foo
+  1970-01-02T00:00:00-07:00: bar
+  1970-01-03T00:00:00-07:00: TBD
+`,
+		},
+	} {
+		t.Run(test.msg, func(t *testing.T) {
+			f, err := ioutil.TempFile("", "")
+			require.NoError(t, err)
+			path := f.Name()
+			defer os.Remove(path)
+
+			err = Write(path, test.sched)
+			if test.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), test.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			bs, err := ioutil.ReadFile(path)
+			require.NoError(t, err)
+			assert.Equal(t, test.want, string(bs))
+		})
+	}
+}
+
+func mustTime(t *testing.T, ts string) time.Time {
+	res, err := time.Parse(time.RFC3339, ts)
+	require.NoError(t, err)
+	return res
+}
+
 func tmp(t *testing.T, contents string) string {
 	f, err := ioutil.TempFile("", "")
 	require.NoError(t, err)

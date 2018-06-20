@@ -39,6 +39,8 @@ const (
 	_timeFmt        = time.RFC3339
 )
 
+// UnmarshalYAML deserializes a yaml input map into a ShiftList
+// a custom unmarshaller is used because we care about the order of the keys in the input.
 func (sl *ShiftList) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	m := yaml.MapSlice{}
 	if err := unmarshal(&m); err != nil {
@@ -98,4 +100,27 @@ func Read(f string) (s Schedule, err error) {
 		return Schedule{}, err
 	}
 	return s, nil
+}
+
+// MarshalYAML serializes a ShiftList to a yaml map
+// a custom marshaller is used so we can translate a list into a map with ordered keys.
+func (sl ShiftList) MarshalYAML() (interface{}, error) {
+	if len(sl) < 1 {
+		return nil, errors.New("cannot marshal an empty shift list")
+	}
+	m := yaml.MapSlice{}
+	for _, s := range sl {
+		m = append(m, yaml.MapItem{Key: s.Start, Value: s.Email})
+	}
+	m = append(m, yaml.MapItem{Key: sl[len(sl)-1].End, Value: _shiftListEnder})
+	return m, nil
+}
+
+// Write serializes a schedule into the given path
+func Write(path string, s Schedule) error {
+	serialized, err := yaml.Marshal(s)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(path, serialized, 0644)
 }
